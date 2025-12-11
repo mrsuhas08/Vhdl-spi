@@ -24,7 +24,9 @@ architecture Behavioral of spi_testbench is
     signal sclk     :   std_logic;
     signal mosi     :   std_logic; 
     signal data_out :   std_logic_vector(data_width-1 downto 0);
+    
 begin
+
     dut: entity work.spi_topmodule
         generic map(addr_width  =>  addr_width,
                     data_width  =>  data_width)
@@ -39,66 +41,85 @@ begin
                 sclk    =>  sclk,
                 mosi    =>  mosi,
                 data_out=>  data_out);
-    process
+                
+    clock: process
     begin
+    
         wait for 5 ns;
             clk <=  not clk;
-    end process;
+            
+    end process clock;
     
-    process
+    values:process
     begin
+    
         rst <=  '1';
         
         wait for 10 ns;
-        rst <=  '0';
+        rst     <=  '0';
         start   <=  '1';
-            r_w <=  '0';
-            w_addr  <=  x"fe";
-            data_in <=  x"fefe";
-            
-        wait for 2580 ns;
-            r_w <=  '1';
-            r_addr  <=  x"fe";
-            
-        wait for 2530 ns;
-            r_w <=  '0';
-            w_addr  <=  x"fd";
-            data_in <=  x"fdfd";
-            
-        wait for 2580 ns;
-            w_addr  <=  x"fc";
-            data_in <=  x"fcfc";
-            
-        wait for 2580 ns;
-            w_addr  <=  x"fb";
-            data_in <=  x"fbfb";
-            
-        wait for 2580 ns;
-            r_w <=  '1';
-            r_addr  <=  x"fd";
-            
-        wait for 2530 ns;
-            r_addr  <=  x"fc";
-            
-        wait for 2530 ns;
-            r_addr  <=  x"fb";
-            
-        wait for 2530 ns;
-            r_addr  <=  x"fd";
+        r_w     <=  '0';
+            for i in 240 to 254 loop
+                w_addr  <=  std_logic_vector(TO_UNSIGNED(i,addr_width));
+                data_in <=  std_logic_vector(TO_UNSIGNED(i,data_width));
+                wait for 2580 ns;
+            end loop;
         
-        wait for 2530 ns;
-            r_w <=  '0';
-            w_addr  <=  x"fa";
-            data_in <=  x"fafa";
+        r_w     <=  '1';
+        
+            for j in 240 to 254 loop
+                r_addr  <=  std_logic_vector(TO_UNSIGNED(j,addr_width));
+                wait for 2630 ns;
+            end loop;
+--        r_w <=  '0';
+--            w_addr  <=  x"fe";
+--            data_in <=  x"fefe";
             
-        wait for 2580 ns;
-            r_w <=  '1';
-            r_addr  <=  x"fa";
+--        wait for 2580 ns;
+--        r_w <=  '1';
+--            r_addr  <=  x"fe";
+            
+--        wait for 2630 ns;
+--        r_w <=  '0';
+--            w_addr  <=  x"fd";
+--            data_in <=  x"fdfd";
+            
+--        wait for 2580 ns;
+--            w_addr  <=  x"fc";
+--            data_in <=  x"fcfc";
+            
+--        wait for 2580 ns;
+--            w_addr  <=  x"fb";
+--            data_in <=  x"fbfb";
+            
+--        wait for 2580 ns;
+--        r_w <=  '1';
+--            r_addr  <=  x"fd";
+            
+--        wait for 2630 ns;
+--            r_addr  <=  x"fc";
+            
+--        wait for 2630 ns;
+--            r_addr  <=  x"fb";
+            
+--        wait for 2630 ns;
+--            r_addr  <=  x"fd";
+        
+--        wait for 2630 ns;
+--        r_w <=  '0';
+--            w_addr  <=  x"fa";
+--            data_in <=  x"fafa";
+            
+--        wait for 2580 ns;
+--        r_w <=  '1';
+--            r_addr  <=  x"fa";
             
         wait for 2530 ns;
             start   <=  '0';
             
         wait for 2000 ns;
         finish;
-    end process;
+        
+    end process values;
+    
 end Behavioral;
