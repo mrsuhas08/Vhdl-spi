@@ -56,11 +56,11 @@ begin
             w_addr  <=  x"fe";
             data_in <=  x"fefe";
             
-        wait for 2570 ns;
+        wait for 2580 ns;
             r_w <=  '1';
             r_addr  <=  x"fe";
             
-        wait for 2640 ns;
+        wait for 2530 ns;
             r_w <=  '0';
             w_addr  <=  x"fd";
             data_in <=  x"fdfd";
@@ -77,16 +77,16 @@ begin
             r_w <=  '1';
             r_addr  <=  x"fd";
             
-        wait for 2630 ns;
+        wait for 2530 ns;
             r_addr  <=  x"fc";
             
-        wait for 2630 ns;
+        wait for 2530 ns;
             r_addr  <=  x"fb";
             
-        wait for 2630 ns;
+        wait for 2530 ns;
             r_addr  <=  x"fd";
         
-        wait for 2630 ns;
+        wait for 2530 ns;
             r_w <=  '0';
             w_addr  <=  x"fa";
             data_in <=  x"fafa";
@@ -95,7 +95,7 @@ begin
             r_w <=  '1';
             r_addr  <=  x"fa";
             
-        wait for 2630 ns;
+        wait for 2530 ns;
             start   <=  '0';
             
         wait for 2000 ns;
