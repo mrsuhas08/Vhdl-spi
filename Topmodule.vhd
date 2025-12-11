@@ -41,7 +41,9 @@ architecture Behavioral of spi_topmodule is
     component spi_slave is
         generic(addr_width  :   integer := 8;
                 data_width  :   integer := 16);
-        port(sclk   :   in std_logic;
+        port(clk    :   in std_logic;
+             rst    :   in std_logic;
+             sclk   :   in std_logic;
              cs     :   in std_logic;
              mosi   :   in std_logic;
              
@@ -76,7 +78,9 @@ begin
     slave: spi_slave
         generic map(addr_width => addr_width,
                     data_width => data_width)
-        port map(sclk   =>  sclk_w,
+        port map(clk    =>  clk,
+                rst     =>  rst,
+                sclk    =>  sclk_w,
                 cs      =>  cs_w,
                 mosi    =>  mosi_w,
                 miso    =>  miso_w);
