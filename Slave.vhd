@@ -5,7 +5,9 @@ use IEEE.numeric_std.ALL;
 entity spi_slave is
     generic(addr_width  :   integer := 8;
             data_width  :   integer := 16);
-    port(sclk   :   in std_logic;
+    port(clk    :   in std_logic;
+         rst    :   in std_logic;
+         sclk   :   in std_logic;
          cs     :   in std_logic;
          mosi   :   in std_logic;
          
@@ -15,6 +17,10 @@ end spi_slave;
 architecture Behavioral of spi_slave is
     constant depth  :   integer:=2**addr_width;
     signal reg_addr :   std_logic_vector(addr_width-1 downto 0) := (others => '0');
+    
+    signal fedge    :   std_logic   := '0';
+    signal dsclk    :   std_logic   := '0';
+    signal pedge    :   std_logic   := '0';
     
     signal shift_rw :   std_logic   := '0';
     signal shift_a  :   std_logic_vector(addr_width-1 downto 0) := (others => '0');
@@ -32,7 +38,17 @@ architecture Behavioral of spi_slave is
                 rdata);
     signal state    :   fsm     :=idle;
 begin
-    process(sclk,cs)is
+    process (clk)is
+    begin
+        if rising_edge (clk)then
+            dsclk   <=  sclk;
+        end if;
+    end process;
+    
+    fedge   <=  (dsclk and (not sclk));
+    pedge   <=  (sclk and (not dsclk));
+    
+    process(clk,rst)is
     begin
         if cs = '1' then
             miso    <=  'Z';
@@ -42,25 +58,27 @@ begin
             shift_rw<=  '0';
             count   <=  0;
             state   <=  idle;
-        elsif falling_edge(sclk)then
+        elsif rising_edge(clk)then
             case state is
                 when idle =>
                     count   <=  0;
                     state   <=  rw;
                     
                 when rw =>
-                    if count = 0 then
+--                    if count = 0 then
+                    if fedge = '1' then
                         shift_rw<=  mosi;
-                        count   <= count+1;
+                        count   <=  0;
                         state   <=  addr;
                     end if;
                     
                 when addr =>
-                    if count >= 0 and count <= addr_width then
+                    if fedge = '1' then
+                    if count < addr_width then
                         shift_a <=  shift_a(addr_width-2 downto 0) & mosi;
                         count   <=  count+1;
                         
-                        if count = addr_width then
+                        if count = addr_width-1 then
                             reg_addr<=  shift_a(addr_width-2 downto 0) & mosi;
                             count   <=  0;
                             
@@ -79,8 +97,10 @@ begin
                         end if;
                         
                     end if;
+                    end if;
                     
                 when wdata =>
+                    if fedge = '1' then
                     if count >= 0 and count < data_width then
                         shift_d <=  shift_d(data_width-2 downto 0) & mosi;
                         count   <=  count+1;
@@ -92,9 +112,11 @@ begin
                         end if;
                         
                     end if;
+                    end if;
                 
                 when rdata =>
-                    if count >= 0 and count <=data_width then
+                    if pedge = '1' then
+                    if count >= 0 and count <data_width then
                         miso    <=  shift_d(data_width-1);
                         shift_d <=  shift_d(data_width-2 downto 0) & '0';
                         count   <=  count+1;
@@ -104,6 +126,7 @@ begin
                             state   <=  idle;
                         end if;
                         
+                    end if;
                     end if;
                 
                 when others =>
