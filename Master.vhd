@@ -1,7 +1,3 @@
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.numeric_std.ALL;
-
 entity spi_master is
     generic(addr_width  :   integer  := 8;
             data_width  :   integer  := 16);
@@ -27,7 +23,7 @@ architecture Behavioral of spi_master is
     signal fedge    :   std_logic   := '0';
     signal dsclk    :   std_logic   := '0';
     signal psclk    :   std_logic   := '0';
-    signal pedge    :   std_logic   := '0';
+    signal redge    :   std_logic   := '0';
    
     signal shift_a  :   std_logic_vector(addr_width-1 downto 0) := (others => '0');
     signal shift_d  :   std_logic_vector(data_width-1 downto 0) := (others => '0');
@@ -35,23 +31,32 @@ architecture Behavioral of spi_master is
     
     type fsm is(idle,rw,addr,Wdata,rdata);
     signal state    :   fsm     := idle;
+    
 begin
     
     process (clk, rst)
     begin
+    
         if rst = '1' then
             div <= 0;
+            
         elsif rising_edge(clk) then
+        
             if tcs = '1' then
                 div <= 0;
+                
             else
                 if div < 9 then
-                    div <= div + 1;
+                    div <= div + 1; 
+                     
                 else
                     div <= 0;
                 end if;
+                
             end if;
+            
         end if;
+        
     end process;
 
     
@@ -75,13 +80,15 @@ begin
     
     process (clk)is
     begin
+    
         if rising_edge (clk) then
             dsclk<=psclk;
         end if;
+        
     end process;        
     
     fedge   <=  (dsclk and (not psclk));
-    pedge   <=  (psclk and (not dsclk));
+    redge   <=  (psclk and (not dsclk));
     
     sclk    <=  psclk;
     cs      <=  tcs;
@@ -99,9 +106,11 @@ begin
             state   <=  idle;
             
         elsif rising_edge (clk) then
+        
             case state is
             
                 when idle =>
+                
                     tcs     <=  '1';
                     mosi    <=  '0';
                     count   <=  0;
@@ -124,7 +133,7 @@ begin
                     
                 when rw =>
 
-                    if pedge = '1' then
+                    if redge = '1' then
                         mosi   <=  r_w;
                         count  <=  addr_width;
                         state  <=  addr;
@@ -132,7 +141,7 @@ begin
                     
                 when addr =>
                     
-                    if pedge = '1' then
+                    if redge = '1' then
                         mosi    <=  shift_a(addr_width-1);
                         shift_a <=  shift_a(addr_width-2 downto 0) & '0';
                         count   <=  count-1;
@@ -153,7 +162,7 @@ begin
                            
                 when wdata =>
                     
-                    if pedge = '1' then
+                    if redge = '1' then
                         mosi    <=  shift_d(data_width-1);
                         shift_d <=  shift_d(data_width-2 downto 0) & '0';
                         count   <=  count-1;
@@ -172,7 +181,7 @@ begin
                         shift_d <=  shift_d(data_width-2 downto 0) & miso;
                         count   <=  count-1;
                         
-                        if count = 1 then
+                        if count = 0 then
                             data_out    <=  shift_d(data_width-2 downto 0) & miso;
                             tcs         <=  '1';
                             count       <=  0;
@@ -182,6 +191,7 @@ begin
                     end if;
 
                 when others =>
+                
                     state   <=  idle;
                     
             end case;
