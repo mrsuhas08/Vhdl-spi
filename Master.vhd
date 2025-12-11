@@ -172,7 +172,7 @@ begin
                         shift_d <=  shift_d(data_width-2 downto 0) & miso;
                         count   <=  count-1;
                         
-                        if count = 0 then
+                        if count = 1 then
                             data_out    <=  shift_d(data_width-2 downto 0) & miso;
                             tcs         <=  '1';
                             count       <=  0;
