@@ -20,7 +20,7 @@ architecture Behavioral of spi_slave is
     
     signal fedge    :   std_logic   := '0';
     signal dsclk    :   std_logic   := '0';
-    signal pedge    :   std_logic   := '0';
+    signal redge    :   std_logic   := '0';
     
     signal shift_rw :   std_logic   := '0';
     signal shift_a  :   std_logic_vector(addr_width-1 downto 0) := (others => '0');
@@ -38,18 +38,22 @@ architecture Behavioral of spi_slave is
                 rdata);
     signal state    :   fsm     :=idle;
 begin
+
     process (clk)is
     begin
+    
         if rising_edge (clk)then
             dsclk   <=  sclk;
         end if;
+        
     end process;
     
     fedge   <=  (dsclk and (not sclk));
-    pedge   <=  (sclk and (not dsclk));
+    redge   <=  (sclk and (not dsclk));
     
     process(clk,rst)is
     begin
+    
         if cs = '1' then
             miso    <=  'Z';
             reg_addr<=  (others => '0');
@@ -58,14 +62,18 @@ begin
             shift_rw<=  '0';
             count   <=  0;
             state   <=  idle;
+            
         elsif rising_edge(clk)then
+        
             case state is
+            
                 when idle =>
+                
                     count   <=  0;
                     state   <=  rw;
                     
                 when rw =>
---                    if count = 0 then
+                
                     if fedge = '1' then
                         shift_rw<=  mosi;
                         count   <=  0;
@@ -73,63 +81,76 @@ begin
                     end if;
                     
                 when addr =>
+                
                     if fedge = '1' then
-                    if count < addr_width then
-                        shift_a <=  shift_a(addr_width-2 downto 0) & mosi;
-                        count   <=  count+1;
-                        
-                        if count = addr_width-1 then
-                            reg_addr<=  shift_a(addr_width-2 downto 0) & mosi;
-                            count   <=  0;
+                    
+                        if count < addr_width then
+                            shift_a <=  shift_a(addr_width-2 downto 0) & mosi;
+                            count   <=  count+1;
                             
-                            if shift_rw = '1' then    --read
-                                shift_d <=  mem(TO_INTEGER(unsigned(shift_a(addr_width-2 downto 0) & mosi)));
+                            if count = addr_width-1 then
+                                reg_addr<=  shift_a(addr_width-2 downto 0) & mosi;
                                 count   <=  0;
-                                state   <=  rdata;
-                            end if;
-                            
-                            if shift_rw = '0' then    --write
-                                shift_d <=  (others => '0');
-                                count   <=  0;
-                                state   <=  wdata;
+                                
+                                if shift_rw = '1' then    --read
+                                    shift_d <=  mem(TO_INTEGER(unsigned(shift_a(addr_width-2 downto 0) & mosi)));
+                                    count   <=  0;
+                                    state   <=  rdata;
+                                end if;
+                                
+                                if shift_rw = '0' then    --write
+                                    shift_d <=  (others => '0');
+                                    count   <=  0;
+                                    state   <=  wdata;
+                                end if;
+                                
                             end if;
                             
                         end if;
                         
-                    end if;
                     end if;
                     
                 when wdata =>
+                
                     if fedge = '1' then
-                    if count >= 0 and count < data_width then
-                        shift_d <=  shift_d(data_width-2 downto 0) & mosi;
-                        count   <=  count+1;
-                        
-                        if count = data_width-1 then
-                            mem(TO_INTEGER(unsigned(reg_addr))) <=  shift_d(data_width-2 downto 0) & mosi;
-                            count   <=  0;
-                            state   <=  idle;
+                    
+                        if count >= 0 and count < data_width then
+                            shift_d <=  shift_d(data_width-2 downto 0) & mosi;
+                            count   <=  count+1;
+                            
+                            if count = data_width-1 then
+                                mem(TO_INTEGER(unsigned(reg_addr))) <=  shift_d(data_width-2 downto 0) & mosi;
+                            end if;
+                            
+                            if count = data_width then
+                                count   <=  0;
+                                state   <=  idle;
+                            end if;
+                            
                         end if;
-                        
-                    end if;
+                    
                     end if;
                 
                 when rdata =>
-                    if pedge = '1' then
-                    if count >= 0 and count <data_width then
-                        miso    <=  shift_d(data_width-1);
-                        shift_d <=  shift_d(data_width-2 downto 0) & '0';
-                        count   <=  count+1;
-                        
-                        if count = data_width-1 then
-                            count   <=  0;
-                            state   <=  idle;
+                
+                    if fedge = '1' then
+                    
+                        if count >= 0 and count <data_width then
+                            miso    <=  shift_d(data_width-1);
+                            shift_d <=  shift_d(data_width-2 downto 0) & '0';
+                            count   <=  count+1;
+                            
+                            if count = data_width then
+                                count   <=  0;
+                                state   <=  idle;
+                            end if;
+                            
                         end if;
-                        
-                    end if;
+                    
                     end if;
                 
                 when others =>
+                
                     state   <=  idle;
                     
             end case;
